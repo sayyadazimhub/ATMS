@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum roles {
+  ADMIN
+  USER
+}
+
+model Admin {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String    @unique
+  password      String
+  phone         String?
+  role          roles     @default(ADMIN)
+  is_active     Boolean   @default(true)
+  resetToken    String?
+  resetTokenExp DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String    @unique
+  password      String
+  phone         String?
+  emailVerified Boolean   @default(false)
+  otp           String?
+  otpExpiresAt  DateTime?
+  resetToken    String?
+  resetTokenExp DateTime?
+  role          roles     @default(USER)
+  is_active     Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Product {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  unit          String // KG, Quintal, Ton
+  currentStock  Float          @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  purchaseItems PurchaseItem[]
+  saleItems     SaleItem[]
+}
+
+model Provider {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  phone     String?
+  address   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  purchases Purchase[]
+}
+
+model Customer {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sales     Sale[]
+}
+
+model Purchase {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  providerId  String         @db.ObjectId
+  provider    Provider       @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  totalAmount Float
+  paidAmount  Float          @default(0)
+  dueAmount   Float          @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  items       PurchaseItem[]
+
+  @@index([providerId])
+  @@index([createdAt])
+}
+
+model PurchaseItem {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  purchaseId String   @db.ObjectId
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String   @db.ObjectId
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity   Float
+  unitPrice  Float
+  totalPrice Float
+  createdAt  DateTime @default(now())
+
+  @@index([purchaseId])
+  @@index([productId])
+}
+
+model Sale {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  customerId  String     @db.ObjectId
+  customer    Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  totalAmount Float
+  paidAmount  Float      @default(0)
+  dueAmount   Float      @default(0)
+  totalProfit Float      @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  items       SaleItem[]
+
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model SaleItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  saleId    String   @db.ObjectId
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Float
+  costPrice Float
+  salePrice Float
+  profit    Float
+  createdAt DateTime @default(now())
+
+  @@index([saleId])
+  @@index([productId])
+}
