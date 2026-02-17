@@ -48,10 +48,15 @@ model Product {
   name          String
   unit          String // KG, Quintal, Ton
   currentStock  Float          @default(0)
+  baseCostPrice Float          @default(0)
+  baseSalePrice Float          @default(0)
+  userId        String?        @db.ObjectId
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   purchaseItems PurchaseItem[]
   saleItems     SaleItem[]
+
+  @@index([userId])
 }
 
 model Provider {
@@ -59,9 +64,12 @@ model Provider {
   name      String
   phone     String?
   address   String?
+  userId    String?    @db.ObjectId
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   purchases Purchase[]
+
+  @@index([userId])
 }
 
 model Customer {
@@ -69,15 +77,19 @@ model Customer {
   name      String
   phone     String?
   address   String?
+  userId    String?  @db.ObjectId
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   sales     Sale[]
+
+  @@index([userId])
 }
 
 model Purchase {
   id          String         @id @default(auto()) @map("_id") @db.ObjectId
   providerId  String         @db.ObjectId
   provider    Provider       @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  userId      String?        @db.ObjectId
   totalAmount Float
   paidAmount  Float          @default(0)
   dueAmount   Float          @default(0)
@@ -86,6 +98,7 @@ model Purchase {
   items       PurchaseItem[]
 
   @@index([providerId])
+  @@index([userId])
   @@index([createdAt])
 }
 
@@ -95,6 +108,7 @@ model PurchaseItem {
   purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
   productId  String   @db.ObjectId
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?  @db.ObjectId
   quantity   Float
   unitPrice  Float
   totalPrice Float
@@ -102,12 +116,14 @@ model PurchaseItem {
 
   @@index([purchaseId])
   @@index([productId])
+  @@index([userId])
 }
 
 model Sale {
   id          String     @id @default(auto()) @map("_id") @db.ObjectId
   customerId  String     @db.ObjectId
   customer    Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  userId      String?    @db.ObjectId
   totalAmount Float
   paidAmount  Float      @default(0)
   dueAmount   Float      @default(0)
@@ -117,6 +133,7 @@ model Sale {
   items       SaleItem[]
 
   @@index([customerId])
+  @@index([userId])
   @@index([createdAt])
 }
 
@@ -126,6 +143,7 @@ model SaleItem {
   sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
   productId String   @db.ObjectId
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String?  @db.ObjectId
   quantity  Float
   costPrice Float
   salePrice Float
@@ -134,4 +152,5 @@ model SaleItem {
 
   @@index([saleId])
   @@index([productId])
+  @@index([userId])
 }

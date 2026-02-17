@@ -5,10 +5,25 @@ export async function GET(request, { params }) {
   try {
     const provider = await prisma.provider.findUnique({
       where: { id: params.id },
+      include: {
+        purchases: {
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
     });
     if (!provider) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(provider);
   } catch (err) {
+    console.error('Error fetching provider:', err);
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
   }
 }

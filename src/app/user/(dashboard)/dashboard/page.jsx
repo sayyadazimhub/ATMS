@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, ShoppingCart, Wallet, AlertTriangle, Calendar } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Wallet, AlertTriangle, Calendar, Package, ArrowUpRight, ArrowDownRight, Users, Truck, BarChart3 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, Legend
 } from 'recharts';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardPage() {
   const [data, setData] = useState(null);
@@ -44,7 +45,7 @@ export default function DashboardPage() {
       endDate: end.toISOString(),
     });
 
-    fetch(`/api/dashboard?${query.toString()}`)
+    fetch(`/api/user/dashboard?${query.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch');
         return res.json();
@@ -88,46 +89,55 @@ export default function DashboardPage() {
   const lowStock = data?.lowStockProducts || [];
   const recent = data?.recentTransactions || {};
   const chartData = data?.chartData || [];
+  const topProducts = data?.topProducts || [];
+  const topCustomers = data?.topCustomers || [];
+  const topProviders = data?.topProviders || [];
 
   const stats = [
     {
-      label: 'Total Sales',
-      value: `₹${Number(s.totalSales || 0).toLocaleString('en-IN')}`,
-      icon: TrendingUp,
-      className: 'text-green-600',
-    },
-    {
-      label: 'Total Purchases',
-      value: `₹${Number(s.totalPurchases || 0).toLocaleString('en-IN')}`,
-      icon: ShoppingCart,
-      className: 'text-blue-600',
-    },
-    {
-      label: 'Total Profit',
+      label: 'Gross Profit',
       value: `₹${Number(s.totalProfit || 0).toLocaleString('en-IN')}`,
-      icon: Wallet,
-      className: 'text-violet-600',
+      icon: TrendingUp,
+      bgColor: 'bg-emerald-50',
+      iconColor: 'text-emerald-600',
+      borderColor: 'border-emerald-200',
     },
     {
-      label: 'Due to Providers',
+      label: 'Receivables',
+      value: `₹${Number(s.totalDueFromCustomers || 0).toLocaleString('en-IN')}`,
+      icon: ArrowUpRight,
+      bgColor: 'bg-violet-50',
+      iconColor: 'text-violet-600',
+      borderColor: 'border-violet-200',
+    },
+    {
+      label: 'Payables',
       value: `₹${Number(s.totalDueToProviders || 0).toLocaleString('en-IN')}`,
-      icon: Wallet,
-      className: 'text-amber-600',
+      icon: ArrowDownRight,
+      bgColor: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+      borderColor: 'border-amber-200',
     },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your crop trading business</p>
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-slate-900 text-white">
+            <BarChart3 className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+            <p className="text-sm text-slate-500">Business overview and insights</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Calendar className="h-4 w-4 text-slate-400" />
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[160px] h-10 rounded-lg">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
@@ -135,7 +145,6 @@ export default function DashboardPage() {
               <SelectItem value="7">Last 7 Days</SelectItem>
               <SelectItem value="30">Last 30 Days</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
-              {/* <SelectItem value="year">This Year</SelectItem> */}
             </SelectContent>
           </Select>
         </div>
@@ -144,15 +153,17 @@ export default function DashboardPage() {
       {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((item) => (
-          <Card key={item.label}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {item.label}
-              </CardTitle>
-              <item.icon className={`h-4 w-4 ${item.className}`} />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{item.value}</p>
+          <Card key={item.label} className={`border-2 ${item.borderColor}`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-slate-600">{item.label}</p>
+                  <p className="text-2xl font-bold text-slate-900">{item.value}</p>
+                </div>
+                <div className={`p-3 rounded-xl ${item.bgColor}`}>
+                  <item.icon className={`h-6 w-6 ${item.iconColor}`} />
+                </div>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -160,27 +171,27 @@ export default function DashboardPage() {
 
       {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Sales & Profit Trend</CardTitle>
-            <CardDescription>Value created over the selected period</CardDescription>
+        <Card className="border-slate-200">
+          <CardHeader className="border-b bg-slate-50">
+            <CardTitle className="text-lg">Sales & Profit Trend</CardTitle>
+            <CardDescription>Performance over selected period</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="h-[300px] w-full">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16a34a" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
                     <XAxis
                       dataKey="date"
                       fontSize={12}
@@ -198,31 +209,18 @@ export default function DashboardPage() {
                       content={({ active, payload, label }) => {
                         if (active && payload && payload.length) {
                           return (
-                            <div className="rounded-lg border bg-background p-2 shadow-sm">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="flex flex-col">
-                                  <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Date
-                                  </span>
-                                  <span className="font-bold text-muted-foreground">
-                                    {new Date(label).toLocaleDateString()}
-                                  </span>
+                            <div className="rounded-lg border bg-white p-3 shadow-lg">
+                              <p className="text-xs text-slate-500 mb-2">{new Date(label).toLocaleDateString()}</p>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                                  <span className="text-xs text-slate-600">Sales:</span>
+                                  <span className="text-sm font-semibold text-emerald-600">₹{payload[0].value.toLocaleString()}</span>
                                 </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Sales
-                                  </span>
-                                  <span className="font-bold text-green-600">
-                                    ₹{payload[0].value.toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Profit
-                                  </span>
-                                  <span className="font-bold text-violet-600">
-                                    ₹{payload[1].value.toLocaleString()}
-                                  </span>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-violet-500" />
+                                  <span className="text-xs text-slate-600">Profit:</span>
+                                  <span className="text-sm font-semibold text-violet-600">₹{payload[1].value.toLocaleString()}</span>
                                 </div>
                               </div>
                             </div>
@@ -231,194 +229,227 @@ export default function DashboardPage() {
                         return null
                       }}
                     />
-                    <Legend />
-                    <Area type="monotone" dataKey="sales" stroke="#16a34a" fillOpacity={1} fill="url(#colorSales)" name="Sales" />
-                    <Area type="monotone" dataKey="profit" stroke="#7c3aed" fillOpacity={1} fill="url(#colorProfit)" name="Profit" />
+                    <Area type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" name="Sales" />
+                    <Area type="monotone" dataKey="profit" stroke="#8b5cf6" strokeWidth={2} fillOpacity={1} fill="url(#colorProfit)" name="Profit" />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No data for this period
-                </div>
+                <div className="flex h-full items-center justify-center text-slate-400">No data for this period</div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Income vs Expense</CardTitle>
-            <CardDescription>Sales vs Purchases comparison</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis
-                      dataKey="date"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    />
-                    <YAxis
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `₹${value / 1000}k`}
-                    />
-                    <Tooltip
-                      cursor={{ fill: 'transparent' }}
-                      content={({ active, payload, label }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="rounded-lg border bg-background p-2 shadow-sm">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="flex flex-col">
-                                  <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Date
-                                  </span>
-                                  <span className="font-bold text-muted-foreground">
-                                    {new Date(label).toLocaleDateString()}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Sales
-                                  </span>
-                                  <span className="font-bold text-green-600">
-                                    ₹{payload[0].value.toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                    Purchases
-                                  </span>
-                                  <span className="font-bold text-blue-600">
-                                    ₹{payload[1].value.toLocaleString()}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Legend />
-                    <Bar dataKey="sales" fill="#16a34a" radius={[4, 4, 0, 0]} name="Sales" />
-                    <Bar dataKey="purchases" fill="#2563eb" radius={[4, 4, 0, 0]} name="Purchases" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No data for this period
-                </div>
-              )}
+        {/* Top Selling Products */}
+        <Card className="border-slate-200">
+          <CardHeader className="border-b bg-slate-50">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <Package className="h-4 w-4 text-blue-600" />
+              </div>
+              <CardTitle className="text-lg">Top Products</CardTitle>
             </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {topProducts.length > 0 ? (
+              <ul className="space-y-3">
+                {topProducts.map((p, idx) => (
+                  <li key={p.productId} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-700">{idx + 1}</div>
+                      <div>
+                        <p className="font-medium text-sm text-slate-900">{p.name}</p>
+                        <p className="text-xs text-slate-500">{p.totalQuantity} {p.unit} sold</p>
+                      </div>
+                    </div>
+                    <p className="font-semibold text-sm text-emerald-600">₹{p.totalProfit?.toLocaleString()}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-center py-12 text-sm text-slate-400">No data available</p>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {lowStock.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-              <AlertTriangle className="h-5 w-5" />
-              Low Stock Alert
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {lowStock.map((p) => (
-                <li
-                  key={p.id}
-                  className="rounded-md border bg-background px-3 py-2 text-sm"
-                >
-                  <span className="font-medium">{p.name}</span>
-                  <span className="ml-2 text-muted-foreground">
-                    {p.currentStock} {p.unit}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Sales</CardTitle>
+        {/* Top Customers */}
+        <Card className="border-slate-200">
+          <CardHeader className="border-b bg-slate-50">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-emerald-100">
+                <Users className="h-4 w-4 text-emerald-600" />
+              </div>
+              <CardTitle className="text-lg">Top Customers</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
-            {recent.sales?.length ? (
-              <ul className="space-y-2">
-                {recent.sales.map((sale) => (
-                  <li
-                    key={sale.id}
-                    className="flex justify-between rounded-lg border p-3 text-sm"
-                  >
-                    <div>
-                      <p className="font-medium">{sale.customer?.name || 'Unknown'}</p>
-                      <p className="text-muted-foreground">
-                        {new Date(sale.createdAt).toLocaleDateString('en-IN')}
-                      </p>
+          <CardContent className="pt-6">
+            {topCustomers.length > 0 ? (
+              <ul className="space-y-3">
+                {topCustomers.map((c, idx) => (
+                  <li key={c.customerId} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 text-xs font-semibold">{idx + 1}</div>
+                      <p className="font-medium text-sm text-slate-900">{c.name}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-green-600">
-                        ₹{Number(sale.totalAmount).toLocaleString('en-IN')}
-                      </p>
-                      <p className="text-muted-foreground">
-                        Profit ₹{Number(sale.totalProfit || 0).toLocaleString('en-IN')}
-                      </p>
-                    </div>
+                    <p className="font-semibold text-sm text-slate-900">₹{c.totalAmount?.toLocaleString()}</p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">No recent sales</p>
+              <p className="text-center py-12 text-sm text-slate-400">No data available</p>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Purchases</CardTitle>
+        {/* Top Providers */}
+        <Card className="border-slate-200">
+          <CardHeader className="border-b bg-slate-50">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <Truck className="h-4 w-4 text-blue-600" />
+              </div>
+              <CardTitle className="text-lg">Top Providers</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent>
-            {recent.purchases?.length ? (
-              <ul className="space-y-2">
-                {recent.purchases.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex justify-between rounded-lg border p-3 text-sm"
-                  >
-                    <div>
-                      <p className="font-medium">{p.provider?.name || 'Unknown'}</p>
-                      <p className="text-muted-foreground">
-                        {new Date(p.createdAt).toLocaleDateString('en-IN')}
-                      </p>
+          <CardContent className="pt-6">
+            {topProviders.length > 0 ? (
+              <ul className="space-y-3">
+                {topProviders.map((p, idx) => (
+                  <li key={p.providerId} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700 text-xs font-semibold">{idx + 1}</div>
+                      <p className="font-medium text-sm text-slate-900">{p.name}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-blue-600">
-                        ₹{Number(p.totalAmount).toLocaleString('en-IN')}
-                      </p>
-                      <p className="text-muted-foreground">
-                        Due ₹{Number(p.dueAmount || 0).toLocaleString('en-IN')}
-                      </p>
-                    </div>
+                    <p className="font-semibold text-sm text-slate-900">₹{p.totalAmount?.toLocaleString()}</p>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">No recent purchases</p>
+              <p className="text-center py-12 text-sm text-slate-400">No data available</p>
             )}
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Sales */}
+        <Card className="lg:col-span-2 border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between border-b bg-slate-50">
+            <CardTitle className="text-lg">Recent Sales</CardTitle>
+            <Button variant="ghost" size="sm" className="h-8" asChild>
+              <a href="/user/sales">View all →</a>
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {recent.sales?.length ? (
+              <div className="space-y-3">
+                {recent.sales.map((sale) => (
+                  <div key={sale.id} className="rounded-lg border border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                          <ArrowUpRight className="h-5 w-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm text-slate-900">{sale.customer?.name || 'Walk-in Customer'}</p>
+                          <p className="text-xs text-slate-500">{new Date(sale.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <p className="font-bold text-emerald-600">₹{Number(sale.totalAmount).toLocaleString()}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-3 border-t">
+                      {sale.items.map((item) => (
+                        <span key={item.id} className="text-xs bg-slate-100 px-2 py-1 rounded">
+                          {item.product.name}: {item.quantity} {item.product.unit}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-12 text-sm text-slate-400">No recent sales</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Low Stock Alert */}
+        <Card className="border-amber-200">
+          <CardHeader className="border-b bg-amber-50">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              </div>
+              <CardTitle className="text-lg">Low Stock</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {lowStock.length > 0 ? (
+              <div className="space-y-3">
+                {lowStock.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-amber-200 bg-amber-50/50">
+                    <span className="font-medium text-sm text-slate-900">{p.name}</span>
+                    <span className="text-xs font-semibold text-amber-600">{p.currentStock} {p.unit}</span>
+                  </div>
+                ))}
+                <Button variant="outline" className="w-full mt-2 h-9 rounded-lg" asChild>
+                  <a href="/user/stock">Manage Stock</a>
+                </Button>
+              </div>
+            ) : (
+              <p className="text-center py-8 text-sm text-slate-400">All stocks sufficient</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Purchases */}
+      <Card className="border-slate-200">
+        <CardHeader className="flex flex-row items-center justify-between border-b bg-slate-50">
+          <CardTitle className="text-lg">Recent Purchases</CardTitle>
+          <Button variant="ghost" size="sm" className="h-8" asChild>
+            <a href="/user/purchases">View all →</a>
+          </Button>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {recent.purchases?.length ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {recent.purchases.map((p) => (
+                <div key={p.id} className="rounded-lg border border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                        <ArrowDownRight className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-slate-900">{p.provider?.name || 'Unknown Provider'}</p>
+                        <p className="text-xs text-slate-500">{new Date(p.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-blue-600 text-sm">₹{Number(p.totalAmount).toLocaleString()}</p>
+                      {p.dueAmount > 0 && (
+                        <p className="text-xs text-rose-600">Due: ₹{Number(p.dueAmount).toLocaleString()}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-3 border-t">
+                    {p.items.map((item) => (
+                      <span key={item.id} className="text-xs bg-slate-100 px-2 py-1 rounded">
+                        {item.product.name}: {item.quantity} {item.product.unit}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center py-12 text-sm text-slate-400">No recent purchases</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

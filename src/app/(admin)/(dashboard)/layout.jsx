@@ -1,21 +1,16 @@
-import AdminSidebar from "@/components/AdminSidebar";
-import AdminHeader from "@/components/AdminHeader";
+'use client';
 
-export const metadata = {
-  title: "CTMS Admin",
-};
+import { Toaster } from 'react-hot-toast';
+import AdminHeader from '@/components/AdminHeader';
 
 export default function AdminLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="flex bg-gray-100">
-        <AdminSidebar />
-
-        <div className="flex-1">
-          <AdminHeader />
-          <main className="p-6">{children}</main>
-        </div>
-      </body>
-    </html>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <Toaster position="top-right" />
+      <AdminHeader />
+      <main className="flex-1 p-6 w-full max-w-7xl mx-auto">
+        {children}
+      </main>
+    </div>
   );
 }

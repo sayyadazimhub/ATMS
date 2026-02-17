@@ -2,8 +2,8 @@ import { Toaster } from 'react-hot-toast';
 import './globals.css';
 
 export const metadata = {
-  title: 'CTMS - Crop Trading Management System',
-  description: 'Manage inventory, sales, purchases, and reports for your crop trading business.',
+  title: 'ATMS - Agricultural Trading Management System',
+  description: 'Manage inventory, sales, purchases, and reports for your agricultural trading business.',
 };
 
 export default function RootLayout({ children }) {

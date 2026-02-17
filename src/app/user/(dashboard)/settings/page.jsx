@@ -1,202 +1,310 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import axios from 'axios';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Lock, Bell, User, LogOut, Shield, Settings as SettingsIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 export default function SettingsPage() {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState(null);
-  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+
+  // Profile State
+  const [profile, setProfile] = useState({ name: '', phone: '', email: '' });
+
+  // Security State
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+
+  // Preferences State
+  const [preferences, setPreferences] = useState(null);
 
   useEffect(() => {
-    fetchSettings();
+    fetchInitialData();
   }, []);
 
-  const fetchSettings = () => {
-    setLoadingSettings(true);
-    fetch('/api/settings')
-      .then((res) => res.json())
-      .then((data) => setSettings(data))
-      .catch((err) => console.error('Failed to load settings:', err))
-      .finally(() => setLoadingSettings(false));
+  const fetchInitialData = async () => {
+    setLoadingInitial(true);
+    try {
+      const [profileRes, settingsRes] = await Promise.all([
+        axios.get('/api/user/profile'),
+        axios.get('/api/user/settings')
+      ]);
+      setProfile(profileRes.data);
+      setPreferences(settingsRes.data);
+    } catch (err) {
+      console.error('Failed to load settings data:', err);
+    } finally {
+      setLoadingInitial(false);
+    }
   };
 
-  const handleChangePassword = async (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      alert('New passwords do not match');
-      return;
-    }
-    if (newPassword.length < 6) {
-      alert('Password must be at least 6 characters');
-      return;
-    }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
+      const res = await axios.put('/api/user/profile', {
+        name: profile.name,
+        phone: profile.phone
       });
-      if (res.ok) {
-        alert('Password updated successfully');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to update password');
-      }
+      setProfile(res.data);
+      alert('Profile updated successfully');
     } catch (err) {
-      console.error('Password change error:', err);
-      alert('Failed to update password');
+      alert(err.response?.data?.error || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateSettings = async () => {
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwords.next !== passwords.confirm) {
+      alert('New passwords do not match');
+      return;
+    }
+    setLoading(true);
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
+      await axios.post('/api/user/auth/change-password', {
+        currentPassword: passwords.current,
+        newPassword: passwords.next
       });
-      const data = await res.json();
-      setSettings(data);
-      alert('Settings updated successfully');
+      alert('Password updated successfully');
+      setPasswords({ current: '', next: '', confirm: '' });
     } catch (err) {
-      console.error('Settings update error:', err);
-      alert('Failed to update settings');
+      alert(err.response?.data?.error || 'Failed to update password');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleNotification = (key) => {
-    setSettings({
-      ...settings,
-      notifications: {
-        ...settings.notifications,
-        [key]: !settings.notifications[key],
-      },
-    });
+  const handleUpdatePrefs = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.put('/api/user/settings', preferences);
+      setPreferences(res.data);
+      alert('Preferences saved');
+    } catch (err) {
+      alert('Failed to save preferences');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/user/auth/logout');
+      window.location.href = '/user/login';
+    } catch (err) {
+      window.location.href = '/user/login';
+    }
+  };
+
+  if (loadingInitial) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Account and app preferences</p>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-3 rounded-2xl bg-slate-900 text-white">
+          <SettingsIcon className="h-6 w-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+          <p className="text-sm text-slate-500">Manage account security and system preferences</p>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Change Password</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current">Current password</Label>
-                <Input
-                  id="current"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new">New password</Label>
-                <Input
-                  id="new"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm">Confirm new password</Label>
-                <Input
-                  id="confirm"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Updating…' : 'Update password'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Navigation Tabs */}
+        <aside className="lg:col-span-3 space-y-2">
+          {[
+            { id: 'profile', label: 'Identity', icon: User },
+            { id: 'security', label: 'Security', icon: Shield },
+            { id: 'prefs', label: 'Preferences', icon: Bell },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 font-medium text-sm",
+                activeTab === tab.id
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
 
-        {!loadingSettings && settings && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Notifications</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive email updates</p>
+          <div className="pt-4 mt-4 border-t border-slate-200">
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="w-full justify-start text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700 font-bold gap-3 rounded-lg"
+            >
+              <LogOut className="h-4 w-4" />
+              Log Out
+            </Button>
+          </div>
+        </aside>
+
+        {/* Content Area */}
+        <main className="lg:col-span-9">
+          {activeTab === 'profile' && (
+            <Card className="border-slate-200 animate-in slide-in-from-right-4 duration-300">
+              <CardHeader className="border-b bg-slate-50">
+                <CardTitle className="text-lg">Personal Identity</CardTitle>
+                <CardDescription>Update your personal details</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
+                      <Input
+                        id="name"
+                        value={profile.name}
+                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                        className="h-10 rounded-lg"
+                        placeholder="Sayyad Azim"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+                      <Input
+                        id="email"
+                        value={profile.email}
+                        className="h-10 rounded-lg bg-slate-50 border-slate-200 text-slate-500"
+                        disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-sm font-medium">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      value={profile.phone || ''}
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      className="h-10 rounded-lg"
+                      placeholder="+91 00000 00000"
+                    />
+                  </div>
+                  <div className="pt-4">
+                    <Button type="submit" disabled={loading} className="h-10 rounded-lg">
+                      {loading ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'security' && (
+            <Card className="border-slate-200 animate-in slide-in-from-right-4 duration-300">
+              <CardHeader className="border-b bg-slate-50">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-amber-500" />
+                  Credentials & Security
+                </CardTitle>
+                <CardDescription>Manage your account password</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Current Password</Label>
+                    <Input
+                      type="password"
+                      value={passwords.current}
+                      onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                      className="h-10 rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">New Password</Label>
+                    <Input
+                      type="password"
+                      value={passwords.next}
+                      onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
+                      className="h-10 rounded-lg"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Confirm New Password</Label>
+                    <Input
+                      type="password"
+                      value={passwords.confirm}
+                      onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                      className="h-10 rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div className="pt-4">
+                    <Button type="submit" disabled={loading} className="h-10 rounded-lg bg-slate-900 border-none">
+                      {loading ? 'Updating...' : 'Update Password'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'prefs' && preferences && (
+            <Card className="border-slate-200 animate-in slide-in-from-right-4 duration-300">
+              <CardHeader className="border-b bg-slate-50">
+                <CardTitle className="text-lg">Communication Preferences</CardTitle>
+                <CardDescription>Manage how you receive alerts and reports</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { id: 'email', label: 'Email Notifications', sub: 'Receive weekly market reports' },
+                    { id: 'lowStock', label: 'Low Stock Alerts', sub: 'Alert when inventory is critical' },
+                    { id: 'newSale', label: 'New Sale Alerts', sub: 'Notify on every outgoing order' },
+                    { id: 'newPurchase', label: 'New Purchase Alerts', sub: 'Confirm when stock is received' },
+                  ].map((p) => (
+                    <div key={p.id} className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium text-slate-900">{p.label}</Label>
+                        <p className="text-xs text-slate-500">{p.sub}</p>
+                      </div>
+                      <Switch
+                        checked={preferences.notifications[p.id]}
+                        onCheckedChange={(checked) => setPreferences({
+                          ...preferences,
+                          notifications: {
+                            ...preferences.notifications,
+                            [p.id]: checked
+                          }
+                        })}
+                      />
+                    </div>
+                  ))}
                 </div>
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.email}
-                  onChange={() => toggleNotification('email')}
-                  className="h-4 w-4"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Low Stock Alerts</Label>
-                  <p className="text-sm text-muted-foreground">Get notified when stock is low</p>
+                <div className="mt-6 pt-6 border-t border-slate-100">
+                  <Button onClick={handleUpdatePrefs} disabled={loading} className="h-10 rounded-lg">
+                    {loading ? 'Saving...' : 'Save Preferences'}
+                  </Button>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.lowStock}
-                  onChange={() => toggleNotification('lowStock')}
-                  className="h-4 w-4"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>New Sale Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Notify on new sales</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.newSale}
-                  onChange={() => toggleNotification('newSale')}
-                  className="h-4 w-4"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>New Purchase Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Notify on new purchases</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.newPurchase}
-                  onChange={() => toggleNotification('newPurchase')}
-                  className="h-4 w-4"
-                />
-              </div>
-              <Button onClick={handleUpdateSettings}>Save Preferences</Button>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
+        </main>
       </div>
     </div>
   );

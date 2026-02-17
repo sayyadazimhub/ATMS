@@ -16,10 +16,15 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     const body = await request.json();
-    const { name, unit } = body;
+    const { name, unit, baseCostPrice, baseSalePrice } = body;
     const product = await prisma.product.update({
       where: { id: params.id },
-      data: { ...(name != null && { name }), ...(unit != null && { unit }) },
+      data: {
+        ...(name != null && { name }),
+        ...(unit != null && { unit }),
+        ...(baseCostPrice != null && { baseCostPrice: parseFloat(baseCostPrice) }),
+        ...(baseSalePrice != null && { baseSalePrice: parseFloat(baseSalePrice) }),
+      },
     });
     return NextResponse.json(product);
   } catch (err) {

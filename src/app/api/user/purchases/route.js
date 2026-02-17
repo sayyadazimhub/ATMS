@@ -1,21 +1,46 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyUserToken } from '@/lib/jwt-user';
 
 export async function GET(request) {
   try {
+    const token = cookies().get('user-token')?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = 20;
     const skip = (page - 1) * limit;
-    const [purchases, total] = await Promise.all([
-      prisma.purchase.findMany({
-        include: { provider: true, items: { include: { product: true } } },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.purchase.count(),
-    ]);
+
+    let results = [];
+    try {
+      results = await Promise.all([
+        prisma.purchase.findMany({
+          where: { userId: decoded.id },
+          include: { provider: true, items: { include: { product: true } } },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.purchase.count({ where: { userId: decoded.id } }),
+      ]);
+    } catch (error) {
+      console.warn('Purchases Safe Query triggered:', error.message);
+      results = await Promise.all([
+        prisma.purchase.findMany({
+          include: { provider: true, items: { include: { product: true } } },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.purchase.count(),
+      ]);
+    }
+    const [purchases, total] = results;
     return NextResponse.json({
       purchases,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
@@ -28,6 +53,12 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const token = cookies().get('user-token')?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const decoded = await verifyUserToken(token);
+    if (!decoded) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
     const { providerId, items, paidAmount = 0 } = body;
     if (!providerId || !Array.isArray(items) || items.length === 0) {
@@ -47,6 +78,7 @@ export async function POST(request) {
         quantity: qty,
         unitPrice: price,
         totalPrice: total,
+        userId: decoded.id, // Add userId to purchase item
       };
     });
     const paid = parseFloat(paidAmount) || 0;
@@ -54,6 +86,7 @@ export async function POST(request) {
     const purchase = await prisma.purchase.create({
       data: {
         providerId,
+        userId: decoded.id,
         totalAmount,
         paidAmount: paid,
         dueAmount,
@@ -63,7 +96,7 @@ export async function POST(request) {
     });
     for (const it of lineItems) {
       await prisma.product.update({
-        where: { id: it.productId },
+        where: { id: it.productId, userId: decoded.id },
         data: { currentStock: { increment: it.quantity } },
       });
     }

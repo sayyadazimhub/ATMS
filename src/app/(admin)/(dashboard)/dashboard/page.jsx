@@ -1,209 +1,254 @@
-// 'use client';
+'use client';
 
-// import { useEffect, useState } from 'react';
-// import axios from 'axios';
-// import toast from 'react-hot-toast';
-// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// import { TrendingUp, ShoppingCart, Wallet, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Users,
+  TrendingUp,
+  ShoppingCart,
+  ArrowUpRight,
+  ArrowDownRight,
+  ShieldCheck,
+  Activity,
+  UserPlus,
+  BarChart3,
+  Settings
+} from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
 
-// export default function DashboardPage() {
-//   const [data, setData] = useState(null);
-//   const [loading, setLoading] = useState(true);
+export default function AdminDashboardPage() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-//   useEffect(() => {
-//     axios
-//       .get('/api/dashboard')
-//       .then((res) => setData(res.data))
-//       .catch(() => toast.error('Failed to load dashboard'))
-//       .finally(() => setLoading(false));
-//   }, []);
+  useEffect(() => {
+    setLoading(true);
+    axios.get('/api/admin/dashboard')
+      .then((res) => setData(res.data))
+      .catch(() => toast.error('Failed to load dashboard'))
+      .finally(() => setLoading(false));
+  }, []);
 
-//   if (loading) {
-//     return (
-//       <div className="flex min-h-[40vh] items-center justify-center">
-//         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-//       </div>
-//     );
-//   }
-
-//   const s = data?.summary || {};
-//   const lowStock = data?.lowStockProducts || [];
-//   const recent = data?.recentTransactions || {};
-
-//   const stats = [
-//     {
-//       label: 'Total sales',
-//       value: `₹${Number(s.totalSales || 0).toLocaleString()}`,
-//       icon: TrendingUp,
-//       className: 'text-green-600',
-//     },
-//     {
-//       label: 'Total purchases',
-//       value: `₹${Number(s.totalPurchases || 0).toLocaleString()}`,
-//       icon: ShoppingCart,
-//       className: 'text-blue-600',
-//     },
-//     {
-//       label: 'Total profit',
-//       value: `₹${Number(s.totalProfit || 0).toLocaleString()}`,
-//       icon: Wallet,
-//       className: 'text-violet-600',
-//     },
-//     {
-//       label: 'Due to providers',
-//       value: `₹${Number(s.totalDueToProviders || 0).toLocaleString()}`,
-//       icon: Wallet,
-//       className: 'text-amber-600',
-//     },
-//   ];
-
-//   return (
-//     <div className="space-y-6">
-//       <div>
-//         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
-//         <p className="text-muted-foreground">Overview of your crop trading business</p>
-//       </div>
-
-//       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-//         {stats.map((item) => (
-//           <Card key={item.label}>
-//             <CardHeader className="flex flex-row items-center justify-between pb-2">
-//               <CardTitle className="text-sm font-medium text-muted-foreground">
-//                 {item.label}
-//               </CardTitle>
-//               <item.icon className={`h-4 w-4 ${item.className}`} />
-//             </CardHeader>
-//             <CardContent>
-//               <p className="text-2xl font-bold">{item.value}</p>
-//             </CardContent>
-//           </Card>
-//         ))}
-//       </div>
-
-//       {lowStock.length > 0 && (
-//         <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
-//           <CardHeader className="pb-2">
-//             <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-//               <AlertTriangle className="h-5 w-5" />
-//               Low stock
-//             </CardTitle>
-//           </CardHeader>
-//           <CardContent>
-//             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-//               {lowStock.map((p) => (
-//                 <li
-//                   key={p.id}
-//                   className="rounded-md border bg-background px-3 py-2 text-sm"
-//                 >
-//                   <span className="font-medium">{p.name}</span>
-//                   <span className="ml-2 text-muted-foreground">
-//                     {p.currentStock} {p.unit}
-//                   </span>
-//                 </li>
-//               ))}
-//             </ul>
-//           </CardContent>
-//         </Card>
-//       )}
-
-//       <div className="grid gap-6 lg:grid-cols-2">
-//         <Card>
-//           <CardHeader>
-//             <CardTitle>Recent sales</CardTitle>
-//           </CardHeader>
-//           <CardContent>
-//             {recent.sales?.length ? (
-//               <ul className="space-y-2">
-//                 {recent.sales.map((sale) => (
-//                   <li
-//                     key={sale.id}
-//                     className="flex justify-between rounded-lg border p-3 text-sm"
-//                   >
-//                     <div>
-//                       <p className="font-medium">{sale.customer?.name}</p>
-//                       <p className="text-muted-foreground">
-//                         {new Date(sale.createdAt).toLocaleDateString()}
-//                       </p>
-//                     </div>
-//                     <div className="text-right">
-//                       <p className="font-semibold text-green-600">
-//                         ₹{Number(sale.totalAmount).toLocaleString()}
-//                       </p>
-//                       <p className="text-muted-foreground">
-//                         Profit ₹{Number(sale.totalProfit || 0).toLocaleString()}
-//                       </p>
-//                     </div>
-//                   </li>
-//                 ))}
-//               </ul>
-//             ) : (
-//               <p className="text-sm text-muted-foreground">No recent sales</p>
-//             )}
-//           </CardContent>
-//         </Card>
-//         <Card>
-//           <CardHeader>
-//             <CardTitle>Recent purchases</CardTitle>
-//           </CardHeader>
-//           <CardContent>
-//             {recent.purchases?.length ? (
-//               <ul className="space-y-2">
-//                 {recent.purchases.map((p) => (
-//                   <li
-//                     key={p.id}
-//                     className="flex justify-between rounded-lg border p-3 text-sm"
-//                   >
-//                     <div>
-//                       <p className="font-medium">{p.provider?.name}</p>
-//                       <p className="text-muted-foreground">
-//                         {new Date(p.createdAt).toLocaleDateString()}
-//                       </p>
-//                     </div>
-//                     <div className="text-right">
-//                       <p className="font-semibold text-blue-600">
-//                         ₹{Number(p.totalAmount).toLocaleString()}
-//                       </p>
-//                       <p className="text-muted-foreground">
-//                         Due ₹{Number(p.dueAmount || 0).toLocaleString()}
-//                       </p>
-//                     </div>
-//                   </li>
-//                 ))}
-//               </ul>
-//             ) : (
-//               <p className="text-sm text-muted-foreground">No recent purchases</p>
-//             )}
-//           </CardContent>
-//         </Card>
-//       </div>
-//     </div>
-//   );
-// }
-
-export default function AdminDashboard() {
-  return (
-    <>
-      <h1 className="text-2xl font-bold mb-6">
-        Admin Dashboard
-      </h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
-        <Card title="Total Traders" value="0" />
-        <Card title="Total Sales" value="₹0" />
-        <Card title="System Users" value="0" />
-        <Card title="Reports" value="0" />
-
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
       </div>
-    </>
-  );
-}
+    );
+  }
 
-function Card({ title, value }) {
+  const s = data?.summary || {};
+  const stats = [
+    {
+      label: 'Network Traders',
+      value: s.totalTraders,
+      icon: Users,
+      bgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600',
+      borderColor: 'border-blue-200',
+    },
+    {
+      label: 'Active Traders',
+      value: s.activeTraders,
+      icon: ShieldCheck,
+      bgColor: 'bg-emerald-50',
+      iconColor: 'text-emerald-600',
+      borderColor: 'border-emerald-200',
+    },
+    {
+      label: 'Network Sales',
+      value: (s.totalTransactions || 0).toLocaleString(),
+      icon: Activity,
+      bgColor: 'bg-violet-50',
+      iconColor: 'text-violet-600',
+      borderColor: 'border-violet-200',
+    },
+    {
+      label: 'Network Revenue',
+      value: (v => {
+        if (v >= 10000000) return `₹${(v / 10000000).toFixed(2)}Cr`;
+        if (v >= 100000) return `₹${(v / 100000).toFixed(2)}L`;
+        return `₹${v.toLocaleString('en-IN')}`;
+      })(s.totalVolume || 0),
+      icon: TrendingUp,
+      bgColor: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+      borderColor: 'border-amber-200',
+    },
+  ];
+
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <p className="text-gray-500">{title}</p>
-      <h2 className="text-xl font-bold">{value}</h2>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-3 rounded-2xl bg-slate-900 text-white">
+          <Activity className="h-6 w-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
+          <p className="text-sm text-slate-500">Live network statistics based on user activity</p>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((item) => (
+          <Card key={item.label} className={`border-2 ${item.borderColor}`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-slate-600">{item.label}</p>
+                  <p className="text-2xl font-bold text-slate-900">{item.value}</p>
+                </div>
+                <div className={`p-3 rounded-xl ${item.bgColor}`}>
+                  <item.icon className={`h-6 w-6 ${item.iconColor}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* volume Chart */}
+        <Card className="lg:col-span-2 border-slate-200">
+          <CardHeader className="border-b bg-slate-50">
+            <CardTitle className="text-lg">Network Revenue Growth</CardTitle>
+            <CardDescription>Aggregate sales volume across all traders</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0f172a" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#0f172a" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
+                  <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => {
+                    if (v >= 100000) return `${(v / 100000).toFixed(1)}L`;
+                    if (v >= 1000) return `${(v / 1000).toFixed(0)}k`;
+                    return v;
+                  }} />
+                  <Tooltip formatter={(v) => `₹${Number(v).toLocaleString('en-IN')}`} />
+                  <Area type="monotone" dataKey="volume" stroke="#0f172a" strokeWidth={2} fillOpacity={1} fill="url(#colorVolume)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Registered Traders */}
+        <Card className="border-slate-200">
+          <CardHeader className="border-b bg-slate-50 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <UserPlus className="h-4 w-4 text-blue-600" />
+              </div>
+              <CardTitle className="text-lg">New Traders</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              {data.recentTraders.map((trader) => (
+                <div key={trader.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 flex items-center justify-center rounded-full bg-slate-900 text-white font-bold">
+                      {trader.name?.charAt(0) || 'T'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{trader.name}</p>
+                      <p className="text-xs text-slate-500">{trader.email}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase font-bold text-slate-400">
+                      {trader.joined ? new Date(trader.joined).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="w-full mt-4 h-10 rounded-xl" asChild>
+              <a href="/traders">Manage All Traders</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Quick Actions */}
+        <Card className="border-slate-200">
+          <CardHeader className="border-b bg-slate-50">
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Button variant="outline" className="h-16 flex flex-col gap-1 items-start justify-center px-4 rounded-xl border-2 hover:border-slate-900 hover:bg-slate-50">
+                <UserPlus className="h-4 w-4" />
+                <span className="text-xs">Invite Trader</span>
+              </Button>
+              <Button variant="outline" className="h-16 flex flex-col gap-1 items-start justify-center px-4 rounded-xl border-2 hover:border-slate-900 hover:bg-slate-50">
+                <BarChart3 className="h-4 w-4" />
+                <span className="text-xs">Export Report</span>
+              </Button>
+              <Button variant="outline" className="h-16 flex flex-col gap-1 items-start justify-center px-4 rounded-xl border-2 hover:border-slate-900 hover:bg-slate-50">
+                <ShieldCheck className="h-4 w-4" />
+                <span className="text-xs">System Logs</span>
+              </Button>
+              <Button variant="outline" className="h-16 flex flex-col gap-1 items-start justify-center px-4 rounded-xl border-2 hover:border-slate-900 hover:bg-slate-50">
+                <Settings className="h-4 w-4" />
+                <span className="text-xs">Backup Data</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Health */}
+        <Card className="border-emerald-200">
+          <CardHeader className="border-b bg-emerald-50">
+            <CardTitle className="text-lg text-emerald-900 flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              System Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Database</span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-emerald-600">
+                  <div className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+                  Online
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">API Server</span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-emerald-600">
+                  <div className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+                  Operational
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-600">Storage Services</span>
+                <span className="flex items-center gap-2 text-sm font-semibold text-emerald-600">
+                  <div className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+                  Connected
+                </span>
+              </div>
+              <div className="pt-2 border-t text-center">
+                <p className="text-[10px] text-slate-400 uppercase font-bold">Last backup 2 hours ago</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
